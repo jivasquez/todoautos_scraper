@@ -19,7 +19,7 @@ class ChileautosScrapper(object):
     items = table.findAll('tr')
     attributes_list = {'Marca:': 'brand',
     u'Modelo:': 'model',
-    u'Versión:': 'version',
+    u'Versión:': 'model_version',
     u'Año:': 'year',
     u'Tipo vehíc:': 'type_of_vehicle',
     u'Carrocería:': 'vehicle_body',
@@ -36,23 +36,44 @@ class ChileautosScrapper(object):
     u'Catalítico': 'catalitic',
     u'Combustible': 'fuel',
     u'Puertas:': 'doors',
-    u'Alarma': 'alarm'
+    u'Alarma': 'alarm',
+    u'Ciudad:': 'city',
+    u'Patente:': 'plate_number',
+    u'Telefono:': 'contact_numbers'
     }
     publication = {}
     for item in items:
       if item.find('td') and item.find('td').string in attributes_list.keys() and item.find('td').findNextSibling():
         publication[attributes_list.get(item.find('td').string)] = item.find('td').findNextSibling().text.strip()
+        if item.find('td').string == 'Telefono:':
+          publication['contact_numbers'] = item.find('td').findNextSibling()
     
-    # Convert year to number
+    # Convert to number
     for parameter in ['year', 'kilometers', 'engine', 'doors']:
       if publication.get(parameter):
         publication[parameter] = ChileautosScrapper.process_int_parameter(publication.get(parameter))
+
+    if publication.get('contact_numbers'):
+      contents = publication.get('contact_numbers').contents
+      contact_numbers = []
+      for content in contents:
+        phone = {'number': content.text.replace('cel.:', '').replace('fijo:', '').replace(' ', '').strip(), 'phone_type': None}
+        if content.text.find("cel.:"):
+          phone['phone_type'] = "mobile"
+        if content.text.find("fijo:"):
+          phone['phone_type'] = "landline"
+        contact_numbers.append(phone)
+      publication['contact_numbers'] = contact_numbers
 
     for parameter, chileautos_key in [('assisted_steering', u'Hidráulica'), ('abs_break', 'ABS'), ('air_conditioner', 'Acondicionado'), ('airbag', 'SI'), ('alarm', 'SI'), ('centralized_locking', 'Centralizado'), ('at_transmission', u'Autom\xe1tica'), ('catalitic', u'SI'), ('electric_mirrors', u'El\xe9ctricos'), ('radio', u'SI')]:
       if publication.get(parameter) and publication.get(parameter) == chileautos_key:
         publication[parameter] = True
     
+
+
     publication['source'] = 'chileautos'
+    publication['chileautos_id'] = chileautos_id
+
     return publication
 
   @staticmethod
