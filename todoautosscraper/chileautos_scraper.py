@@ -54,13 +54,13 @@ class ChileautosScrapper(object):
         publication[parameter] = ChileautosScrapper.process_int_parameter(publication.get(parameter))
 
     if publication.get('contact_numbers'):
-      contents = publication.get('contact_numbers').contents
+      contents = publication.get('contact_numbers').strings
       contact_numbers = []
       for content in contents:
-        phone = {'number': content.text.replace('cel.:', '').replace('fijo:', '').replace(' ', '').strip(), 'phone_type': None}
-        if content.text.find("cel.:"):
+        phone = {'number': content.replace('cel.:', '').replace('fijo:', '').replace(' ', '').strip(), 'phone_type': None}
+        if content.find("cel.:"):
           phone['phone_type'] = "mobile"
-        if content.text.find("fijo:"):
+        if content.find("fijo:"):
           phone['phone_type'] = "landline"
         contact_numbers.append(phone)
       publication['contact_numbers'] = contact_numbers
@@ -73,6 +73,8 @@ class ChileautosScrapper(object):
 
     publication['source'] = 'chileautos'
     publication['chileautos_id'] = chileautos_id
+    publication['chileautos_id'] = 4522651
+
 
     return publication
 
@@ -94,5 +96,5 @@ class ChileautosScrapper(object):
     return False
     
 
-ChileautosScrapper.retrieve_publication(4522651)
+# ChileautosScrapper.retrieve_publication(4522651)
 
