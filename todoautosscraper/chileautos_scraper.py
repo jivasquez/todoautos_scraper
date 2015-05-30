@@ -93,8 +93,8 @@ class ChileautosScrapper(object):
     last = soup.find(class_="navu").get('href')
     previous_url = 'http:' + last
     publication_ids = []
-    # while previous_url:
-    for x in range(0,3):
+    while previous_url:
+    # for x in range(0,3):
       html = urllib2.urlopen(previous_url)
       page_publications, previous_url = ChileautosScrapper.get_publication_ids_and_previous_url(html)
       publication_ids.extend(page_publications)
