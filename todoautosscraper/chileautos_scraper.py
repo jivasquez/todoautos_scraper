@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import re
+import os
+os.environ['http_proxy']=''
 
 from bs4 import BeautifulSoup
 import urllib2
@@ -58,25 +60,62 @@ class ChileautosScrapper(object):
       contact_numbers = []
       for content in contents:
         phone = {'number': content.replace('cel.:', '').replace('fijo:', '').replace(' ', '').strip(), 'phone_type': None}
-        if content.find("cel.:"):
+        if content.find("cel.:") != -1:
           phone['phone_type'] = "mobile"
-        if content.find("fijo:"):
+        if content.find("fijo:") != -1:
           phone['phone_type'] = "landline"
         contact_numbers.append(phone)
       publication['contact_numbers'] = contact_numbers
 
-    for parameter, chileautos_key in [('assisted_steering', u'Hidráulica'), ('abs_break', 'ABS'), ('air_conditioner', 'Acondicionado'), ('airbag', 'SI'), ('alarm', 'SI'), ('centralized_locking', 'Centralizado'), ('at_transmission', u'Autom\xe1tica'), ('catalitic', u'SI'), ('electric_mirrors', u'El\xe9ctricos'), ('radio', u'SI')]:
+    for parameter, chileautos_key in [('assisted_steering', u'Hidráulica'), ('assisted_steering', u'Asistida'), ('abs_break', 'ABS'), ('air_conditioner', 'Acondicionado'), ('airbag', 'SI'), ('alarm', 'SI'), ('centralized_locking', 'Centralizado'), ('at_transmission', u'Autom\xe1tica'), ('catalitic', u'SI'), ('electric_mirrors', u'El\xe9ctricos'), ('radio', u'SI')]:
       if publication.get(parameter) and publication.get(parameter) == chileautos_key:
         publication[parameter] = True
     
-
+    date_container = soup.findAll('div', style='margin-bottom: 5px;float:left;padding-left:10px;padding-right:10px; width:704px;')[0].text
+    date_regex =  re.compile('Publicado el \w+, (\d+) de (\w+) de (\d+).')
+    date_tuple = date_regex.findall(date_container)[0]
+    months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    if date_tuple:
+      publication['publication_date'] = '%s/%s/%s' % (date_tuple[0], months.index(date_tuple[1])+1, date_tuple[2])
 
     publication['source'] = 'chileautos'
     publication['chileautos_id'] = chileautos_id
-    publication['chileautos_id'] = 4522651
 
 
     return publication
+
+
+  @staticmethod
+  def retrieve_publications_list():
+
+    html =  urllib2.urlopen('http://www.chileautos.cl/cemagic.asp?disp=1&goo=0&sort=fa&dea=100&pag=1')
+    soup = BeautifulSoup(html, from_encoding="iso-8859-1")
+    last = soup.find(class_="navu").get('href')
+    previous_url = 'http:' + last
+    publication_ids = []
+    # while previous_url:
+    for x in range(0,3):
+      html = urllib2.urlopen(previous_url)
+      page_publications, previous_url = ChileautosScrapper.get_publication_ids_and_previous_url(html)
+      publication_ids.extend(page_publications)
+    return publication_ids
+
+  @staticmethod
+  def get_publication_ids_and_previous_url(html):
+    soup = BeautifulSoup(html, from_encoding="iso-8859-1")
+    tr_list = soup.findAll(class_="des")
+    url_list = []
+    for tr in tr_list:
+      unprocessed_link = tr.get('onclick')
+      id_regex = re.compile(r'codauto=(\d+)')
+      if id_regex.search(unprocessed_link).groups():
+        publication_id = id_regex.search(unprocessed_link).groups()[0]
+        url_list.append(publication_id)
+    previous_url = None
+    if soup.find(id='ante'):
+      previous_url = 'http:' + soup.find(id='ante').get('href')
+    return url_list, previous_url
+
 
   @staticmethod
   def get_html(chileautos_id):
