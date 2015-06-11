@@ -23,13 +23,18 @@ class ChileautosScrapper(object):
     u'Modelo:': 'model',
     u'Versión:': 'model_version',
     u'Año:': 'year',
+    u'A\xc3\xb1o:': 'year', 
     u'Tipo vehíc:': 'type_of_vehicle',
+    u'Tipo veh\xc3\xadc:': 'type_of_vehicle',
     u'Carrocería:': 'vehicle_body',
+    u'Carrocer\xc3\xada:': 'vehicle_body',
     u'Color:': 'color',
     u'Kilometraje:': 'kilometers',
     u'Cilindrada :': 'engine',
     u'Transmisión:': 'at_transmission',
+    u'Transmisi\xc3\xb3n:': 'at_transmission',
     u'Dirección:': 'assisted_steering',
+    u'Direcci\xc3\xb3n:': 'assisted_steering',
     u'Aire': 'air_conditioner',
     u'Espejos': 'electric_mirrors',
     u'Frenos': 'abs_break',
@@ -41,14 +46,23 @@ class ChileautosScrapper(object):
     u'Alarma': 'alarm',
     u'Ciudad:': 'city',
     u'Patente:': 'plate_number',
-    u'Telefono:': 'contact_numbers'
+    u'Telefono:': 'contact_numbers',
+    u'Vende:': 'contact_name'
     }
     publication = {}
+    publication['title'] = soup.find('div', style='margin:18px 0 5px 0;float:left;padding-left:10px;padding-right:10px;width:704px;').find('h2').string.strip()
+    publication['description'] = table.find('div', style='text-align: justify').strings.next()
+
     for item in items:
+      # import ipdb; ipdb.set_trace()
       if item.find('td') and item.find('td').string in attributes_list.keys() and item.find('td').findNextSibling():
         publication[attributes_list.get(item.find('td').string)] = item.find('td').findNextSibling().text.strip()
         if item.find('td').string == 'Telefono:':
           publication['contact_numbers'] = item.find('td').findNextSibling()
+        if item.find('td').string == 'Vende:':
+          publication['contact_name'] = item.find('td').findNextSibling().string
+      elif item.find('b') and item.find('b').string == u'Precio':
+        publication['price'] = int(item.findNextSibling().find('b').string.replace('$', '').replace('.', '').strip())
     
     # Convert to number
     for parameter in ['year', 'kilometers', 'engine', 'doors']:
@@ -67,13 +81,20 @@ class ChileautosScrapper(object):
         contact_numbers.append(phone)
       publication['contact_numbers'] = contact_numbers
 
-    for parameter, chileautos_key in [('assisted_steering', u'Hidráulica'), ('assisted_steering', u'Asistida'), ('abs_break', 'ABS'), ('air_conditioner', 'Acondicionado'), ('airbag', 'SI'), ('alarm', 'SI'), ('centralized_locking', 'Centralizado'), ('at_transmission', u'Autom\xe1tica'), ('catalitic', u'SI'), ('electric_mirrors', u'El\xe9ctricos'), ('radio', u'SI')]:
-      if publication.get(parameter) and publication.get(parameter) == chileautos_key:
-        publication[parameter] = True
-    
-    date_container = soup.findAll('div', style='margin-bottom: 5px;float:left;padding-left:10px;padding-right:10px; width:704px;')[0].text
+    for parameter, chileautos_keys in [('assisted_steering', [u'Hidráulica', u'Asistida']), ('abs_break', ['ABS']), ('air_conditioner', ['Acondicionado']), ('airbag', ['SI']), ('alarm', ['SI']), ('centralized_locking', ['Centralizado']), ('at_transmission', [u'Autom\xe1tica',  u'Autom\xc3\xa1tica']), ('catalitic', [u'SI']), ('electric_mirrors', [u'El\xe9ctricos', u'El\xc3\xa9ctricos']), ('radio', [u'SI'])]:
+      if publication.get(parameter):
+        if publication.get(parameter) in chileautos_keys:
+          publication[parameter] = True
+        else:
+          publication[parameter] = False
+        
+
+    date_container = soup.findAll('div', style='margin:18px 0 5px 0;float:left;padding-left:10px;padding-right:10px;width:704px;')[0].text
+                                                
     date_regex =  re.compile('Publicado el \w+, (\d+) de (\w+) de (\d+).')
-    date_tuple = date_regex.findall(date_container)[0]
+    date_tuple = ()
+    if date_regex.findall(date_container):
+      date_tuple = date_regex.findall(date_container)[0]
     months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     if date_tuple:
       publication['publication_date'] = '%s/%s/%s' % (date_tuple[0], months.index(date_tuple[1])+1, date_tuple[2])
