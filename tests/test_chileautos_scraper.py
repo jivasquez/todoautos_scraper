@@ -38,7 +38,14 @@ class TestChileautosScraper(unittest.TestCase):
       "chileautos_id": 4534426,
       "contact_numbers": [{'number': u'42870825', 'phone_type': 'mobile'}],
       "contact_name": u'Marco  Miranda',
-      "price": 7500000
+      "price": 7500000,
+      "images": [
+        'http://fotos.chileautos.cl/fotos/4534/g_4534426_1.jpg',
+        'http://fotos.chileautos.cl/fotos/4534/g_4534426_2.jpg',
+        'http://fotos.chileautos.cl/fotos/4534/g_4534426_3.jpg',
+        'http://fotos.chileautos.cl/fotos/4534/g_4534426_4.jpg',
+        'http://fotos.chileautos.cl/fotos/4534/g_4534426_5.jpg'
+      ]
       }
 
     publication_json = ChileautosScrapper.retrieve_publication(4534426)

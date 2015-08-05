@@ -51,10 +51,10 @@ class ChileautosScrapper(object):
     }
     publication = {}
     publication['title'] = soup.find('div', style='margin:18px 0 5px 0;float:left;padding-left:10px;padding-right:10px;width:704px;').find('h2').string.strip()
-    publication['description'] = table.find('div', style='text-align: justify').strings.next()
+    if table.find('div', style='text-align: justify'):
+      publication['description'] = table.find('div', style='text-align: justify').strings.next()
 
     for item in items:
-      # import ipdb; ipdb.set_trace()
       if item.find('td') and item.find('td').string in attributes_list.keys() and item.find('td').findNextSibling():
         publication[attributes_list.get(item.find('td').string)] = item.find('td').findNextSibling().text.strip()
         if item.find('td').string == 'Telefono:':
@@ -102,6 +102,16 @@ class ChileautosScrapper(object):
     publication['source'] = 'chileautos'
     publication['chileautos_id'] = chileautos_id
 
+    # Obtain images
+    publication['images'] = []
+    images_divs = soup.findAll(class_='vistaautopeque')
+    image_regex = re.compile('([\w.:/]+)\?')
+    for image_container in images_divs:
+      image_src = image_container.find('img')['src']
+      search_result = image_regex.search(image_src)
+      if search_result:
+        large_image = search_result.groups()[0].replace('/t_', '/g_')
+        publication['images'].append(large_image)
 
     return publication
 
